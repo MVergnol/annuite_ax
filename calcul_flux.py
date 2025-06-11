@@ -1,0 +1,47 @@
+import pandas as pd
+from datetime import datetime
+import json
+with open("param.json", "r", encoding="utf-8") as f:
+    contrats = json.load(f)
+from calcul_age import calcul_age_participant
+
+
+'''calcul la periode'''
+age_periode =0
+rentier=calcul_age_participant(contrats, "rentier")
+conjoint = calcul_age_participant(contrats,"conjoint")
+exact_age = rentier[0] - conjoint[0]
+if exact_age > 0 :
+    age_periode =conjoint[0] +120*12 #120ans * les 12 mois d'une annee
+else:
+    age_periode = rentier[0] +120*12
+
+
+def generer_dates_flux(date_effet_str):
+    date_effet = pd.Timestamp(datetime.strptime(date_effet_str, "%d/%m/%Y"))  # Convertir en Timestamp
+    date_effet = date_effet + pd.DateOffset(months=-1)  # Décale d'un mois
+
+    if contrats['fractionnement']==12 :
+        flux_mois = pd.date_range(start=date_effet, periods = int(age_periode) , freq='M')  # fin de mois
+    elif contrats['fractionnement'] == 4 :
+        flux_mois = pd.date_range(start=date_effet, periods = int(age_periode/3) , freq='3ME')  # fin de 3 mois
+    elif contrats['fractionnement'] == 2 :
+        flux_mois = pd.date_range(start=date_effet, periods = int(age_periode/6 ), freq='6ME')  # fin de 6 mois
+    elif contrats['fractionnement'] == 1 :
+        flux_mois = pd.date_range(start=date_effet, periods = int(age_periode/12) , freq='YE')  # fin d annee
+    else:
+        raise ValueError("Fractionnement invalide")  # si l'utilisateur n'a pas rempli correctement
+    
+    '''mettre la bonne date au debut'''
+    if date_effet.month != 1 or date_effet.day != 1:
+        date_effet = pd.Timestamp(contrats['Date d effet de la rente'])  # Force le bon début  
+    flux_mois = flux_mois[1:] # effacer le mois de decalage
+    return [date_effet] + list(flux_mois) #retourne les flux 
+
+
+
+
+dates = generer_dates_flux(contrats['Date d effet de la rente'])
+dates_formattees = [d.strftime('%d/%m/%Y') for d in dates] #met dans un autres formats
+
+#print(dates_formattees)
