@@ -18,7 +18,7 @@ table_rentier = table_morta[str(rentier[3])]
 table_conjoint = table_morta[str(conjoint[3])]
 
 'calcul pour la colonne flux'
-dates = generer_dates_flux(contrats['Date d effet de la rente'])
+dates = generer_dates_flux(contrats['Date d effet de la rente'],contrats)
 
 '''calcul des ages par rapport a la date'''
 ages_exacts_rentier = [age_exact(contrats['Date de naissance'], d) for d in dates]
