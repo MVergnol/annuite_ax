@@ -11,10 +11,7 @@ age_periode =0
 rentier=calcul_age_participant(contrats, "rentier")
 conjoint = calcul_age_participant(contrats,"conjoint")
 exact_age = rentier[0] - conjoint[0]
-if exact_age > 0 :
-    age_periode =conjoint[0] +120*12 #120ans * les 12 mois d'une annee
-else:
-    age_periode = rentier[0] +120*12
+age_periode = max(rentier[0], conjoint[0]) + 120 * 12  # 120 ans * 12 mois
 
 
 def generer_dates_flux(date_effet_str):

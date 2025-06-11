@@ -116,6 +116,11 @@ LXc_rentier["coef_tempo"] = [calcul_coef_tempo(contrats['Tempo'], contrats['frac
 
 #print(LXc_rentier[["date", "age_exact", "coef_tempo"]].head())
 
+'''test Arrerage'''
+if contrats['Arrerage au deces'] not in ["Annulé", "Entier", "Prorata"]:
+    raise ValueError("Le paramètre 'Arrérage au décès' doit être 'Annulé', 'Entier' ou 'Prorata'.")
+
+
 '''calcul de at_ter'''
 LXc_rentier["at_ter"] = (LXc_rentier["ratio_LX"] +contrats['tx rev'] * LXc_rentier["px_py"] +
     (0 if contrats['Terme'] == "Avance" or contrats['Arrerage au deces'] == "Annulé" 

@@ -1,7 +1,6 @@
 {
     "Date de naissance" : "08/06/1975",
     "Date d effet de la rente" : "01/01/2025",
-    "Date de calcul" : "31/12/2024",
     "Taux technique" : 0,
     "Terme" : "Echu", 
     "tx rev" : 0,
@@ -12,7 +11,7 @@
     "Arrerage au deces" : "Prorata",
     "Tempo" : 0,
     "CC" : 422585.62,
-    "fractionnement" : 1,
+    "fractionnement" : 2,
     "frais sur arrerage" : 0.025,
     "arrondi age exact" : 3
 }

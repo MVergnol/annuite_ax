@@ -7,6 +7,8 @@ LXc_rentier_main = get_LXc_rentier()
 
 '''calcul des ax'''
 def ax(LXc_rentier, terme, fractionnement):
+    if terme not in ["Echu", "Avance"]:
+        raise ValueError("Le paramètre 'terme' doit être 'Echu' ou 'Avance'.")
     somme_valeurs = (
         LXc_rentier["at_bis"].iloc[1:].sum()  # Exclut le premier élément si 'Echu'
         if terme == "Echu"
