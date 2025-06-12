@@ -12,13 +12,13 @@ rentier=calcul_age_participant(contrats, "rentier")
 conjoint = calcul_age_participant(contrats,"conjoint")
 age_periode = max(rentier[0], conjoint[0]) + 120 * 12  # 120 ans * 12 mois
 
-'''
+
 def generer_dates_flux(date_effet_str):
     date_effet = pd.Timestamp(datetime.strptime(date_effet_str, "%d/%m/%Y"))  # Convertir en Timestamp
     date_effet = date_effet + pd.DateOffset(months=-1)  # Décale d'un mois
 
     if contrats['fractionnement']==12 :
-        flux_mois = pd.date_range(start=date_effet, periods = int(age_periode) , freq='M')  # fin de mois
+        flux_mois = pd.date_range(start=date_effet, periods = int(age_periode) , freq='ME')  # fin de mois
     elif contrats['fractionnement'] == 4 :
         flux_mois = pd.date_range(start=date_effet, periods = int(age_periode/3) , freq='3ME')  # fin de 3 mois
     elif contrats['fractionnement'] == 2 :
@@ -70,3 +70,4 @@ dates = generer_dates_flux(contrats['Date d effet de la rente'], contrats)
 dates_formattees = [d.strftime('%d/%m/%Y') for d in dates]  # Formatage des dates
 
 #print(dates_formattees)
+'''

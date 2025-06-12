@@ -1,5 +1,6 @@
 from calcul_LX_LY_colonne import get_LXc_rentier
 import json
+import numpy as np
 with open("param.json", "r", encoding="utf-8") as f:
     contrats = json.load(f)
 
@@ -25,13 +26,17 @@ resultat_ax = ax(LXc_rentier_main, contrats['Terme'], contrats['fractionnement']
 
 '''calcul de la rente brute'''
 def rente_brute(contrats, resultat_ax):
-    return contrats["CC"] / resultat_ax if resultat_ax != 0 else 0  # Évite une division par zéro
+    try:
+        return np.where(resultat_ax != 0, contrats["CC"] / resultat_ax, 0)
+    except ZeroDivisionError:
+        print("⚠️ Attention : `resultat_ax` est à zéro. Retourne 0 par précaution.")
+        return 0
 
 # Application
 rente_brute_resultat = rente_brute(contrats, resultat_ax)
 
-# Affichage du résultat
-#print("Rente brute :", rente_brute)
+# Affichage des résultats
+#print("Rente brute :", rente_brute_resultat)
 
 '''calcul rente brute periodique'''
 def rente_brute_periodique(rente_brute_resultat, fractionnement):
