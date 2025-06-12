@@ -104,21 +104,33 @@ LXc_rentier["px_py"] = px_py(LXc_rentier["LX_exact"], LXexact, LYc_conjoint["LY_
 #print(LXc_rentier.head())
 
 '''calcul valeur actualisee'''
-def calcul_valeur_actualisee(taux_technique, ages_exacts_rentier, age_effet):
-    return 1 / (1 + taux_technique) ** (ages_exacts_rentier - age_effet)
+# Extraction du taux technique
+taux_technique = contrats['Taux technique']
 
-# Application pour le rentier
-LXc_rentier["valeur_actualisee"] = calcul_valeur_actualisee(contrats['Taux technique'], LXc_rentier["age_exact"], rentier[0])
+# Calcul vectorisé avec NumPy pour améliorer les performances
+LXc_rentier["valeur_actualisee"] = np.power(1 / (1 + taux_technique), LXc_rentier["age_exact"] - rentier[0])
 
 # Affichage des résultats
 #print(LXc_rentier[["date", "age_exact", "valeur_actualisee"]].head())
 
 '''calcul du prorata'''
-LXc_rentier["prorata"] = ((LXc_rentier["LX_exact"] - LXc_rentier["LX_exact"].shift(-1)) / LXexact) * (1 - contrats['tx rev'] * LYc_conjoint["LY_exact"].shift(-1) / LYexact) + \
-                       ((LYc_conjoint["LY_exact"] - LYc_conjoint["LY_exact"].shift(-1)) / LYexact) * (1 - LXc_rentier["LX_exact"] / LXexact) * contrats['tx rev']
-LXc_rentier.loc[LXc_rentier.index[0], "prorata"] = None
-#print(LXc_rentier[["date", "age_exact", "prorata"]].head())
+# Pré-calculs pour éviter les répétitions
+LX_shift = LXc_rentier["LX_exact"].shift(-1)
+LY_shift = LYc_conjoint["LY_exact"].shift(-1)
+tx_rev = contrats['tx rev']
 
+# Calcul des termes
+part1 = ((LXc_rentier["LX_exact"] - LX_shift) / LXexact) * (1 - tx_rev * LY_shift / LYexact)
+part2 = ((LYc_conjoint["LY_exact"] - LY_shift) / LYexact) * (1 - LXc_rentier["LX_exact"] / LXexact) * tx_rev
+
+# Application du calcul optimisé
+LXc_rentier["prorata"] = part1 + part2
+
+# Correction de la première ligne
+LXc_rentier.loc[LXc_rentier.index[0], "prorata"] = None
+
+# Affichage des résultats
+#print(LXc_rentier[["date", "age_exact", "prorata"]].head())
 
 '''calcul coeff tempo'''
 def calcul_coef_tempo(tempo, fractionnement, index):
@@ -133,9 +145,8 @@ LXc_rentier["coef_tempo"] = [calcul_coef_tempo(contrats['Tempo'], contrats['frac
 if contrats['Arrerage au deces'] not in ["Annulé", "Entier", "Prorata"]:
     raise ValueError("Le paramètre 'Arrérage au décès' doit être 'Annulé', 'Entier' ou 'Prorata'.")
 
-
 '''calcul de at_ter'''
-LXc_rentier["at_ter"] = (LXc_rentier["ratio_LX"] +contrats['tx rev'] * LXc_rentier["px_py"] +
+'''LXc_rentier["at_ter"] = (LXc_rentier["ratio_LX"] +contrats['tx rev'] * LXc_rentier["px_py"] +
     (0 if contrats['Terme'] == "Avance" or contrats['Arrerage au deces'] == "Annulé" 
         else LXc_rentier["prorata"] * (1 if contrats['Arrerage au deces'] == "Entier" 
         else 0.5 * 1 / (1 + contrats['Taux technique']) ** (0.5 / contrats['fractionnement'])))) * LXc_rentier["valeur_actualisee"] * LXc_rentier["coef_tempo"]
@@ -143,6 +154,31 @@ LXc_rentier.loc[LXc_rentier.index[0], "at_ter"] = 1
 
 # Affichage des premières lignes
 #print(LXc_rentier[["date", "at_ter"]].head())
+'''
+import numpy as np
+
+# Extraction des paramètres de contrats pour éviter les répétitions
+tx_rev = contrats['tx rev']
+terme = contrats['Terme']
+arrerage_deces = contrats['Arrerage au deces']
+taux_technique = contrats['Taux technique']
+fractionnement = contrats['fractionnement']
+
+# Calcul du facteur d'arrérage au décès
+facteur_arrerage = 0 if terme == "Avance" or arrerage_deces == "Annulé" else \
+    LXc_rentier["prorata"] * (1 if arrerage_deces == "Entier" else \
+    0.5 * np.power(1 / (1 + taux_technique), 0.5 / fractionnement))
+
+# Calcul final
+LXc_rentier["at_ter"] = (LXc_rentier["ratio_LX"] + tx_rev * LXc_rentier["px_py"] + facteur_arrerage) \
+                        * LXc_rentier["valeur_actualisee"] * LXc_rentier["coef_tempo"]
+
+# Correction de la première ligne
+LXc_rentier.loc[LXc_rentier.index[0], "at_ter"] = 1
+
+# Affichage des résultats
+#print(LXc_rentier[["date", "at_ter"]].head())
+
 
 '''calcul de at_bis'''
 LXc_rentier["at_bis"] = np.where(
