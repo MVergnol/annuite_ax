@@ -50,48 +50,57 @@ def calcul_colonne_LX_ou_LY(dates, ages_exacts, ages_entiers, table_mortalite, a
         "valeur_annuite": valeurs_annuite
     })
 
-# Utilisation pour le rentier
+def calcul_LX_exact(LXc, LX1c, ages_decimaux, arrondi):
+    return round((1 - ages_decimaux) * LXc["valeur_annuite"] + ages_decimaux * LX1c["valeur_annuite"], arrondi)
+
+# Calcul des colonnes LX et LY
 LXc_rentier = calcul_colonne_LX_ou_LY(dates, ages_exacts_rentier, ages_entier_rentier, table_rentier, age_offset=0)
 LX1c_rentier = calcul_colonne_LX_ou_LY(dates, ages_exacts_rentier, ages_entier_rentier, table_rentier, age_offset=1)
-# Utilisation pour le conjoint
 LYc_conjoint = calcul_colonne_LX_ou_LY(dates, ages_exacts_conjoint, ages_entier_conjoint, table_conjoint, age_offset=0)
 LY1c_conjoint = calcul_colonne_LX_ou_LY(dates, ages_exacts_conjoint, ages_entier_conjoint, table_conjoint, age_offset=1)
-#calcul age decimal
-ages_decimaux_rentier = LXc_rentier["age_exact"] - LXc_rentier["age_entier"]
-ages_decimaux_conjoint = LYc_conjoint["age_exact"] - LYc_conjoint["age_entier"]
 
-# Colonne LX_exact
-LXc_rentier["LX_exact"] = round((1 - ages_decimaux_rentier) * LXc_rentier["valeur_annuite"] + ages_decimaux_rentier * LX1c_rentier["valeur_annuite"], contrats['arrondi age exact'])
-LYc_conjoint["LY_exact"] = round((1 - ages_decimaux_conjoint) * LYc_conjoint["valeur_annuite"] + ages_decimaux_conjoint * LY1c_conjoint["valeur_annuite"], contrats['arrondi age exact'])
+# Calcul des âges décimaux
+ages_decimaux = {
+    "rentier": LXc_rentier["age_exact"] - LXc_rentier["age_entier"],
+    "conjoint": LYc_conjoint["age_exact"] - LYc_conjoint["age_entier"]
+}
+
+# Application de la fonction optimisée
+LXc_rentier["LX_exact"] = calcul_LX_exact(LXc_rentier, LX1c_rentier, ages_decimaux["rentier"], contrats['arrondi age exact'])
+LYc_conjoint["LY_exact"] = calcul_LX_exact(LYc_conjoint, LY1c_conjoint, ages_decimaux["conjoint"], contrats['arrondi age exact'])
 
 # Affichage des 5 premières lignes
 #print(LXc_rentier[["date", "age_exact", "age_entier", "valeur_annuite", "LX_exact"]].head())
 #print(LYc_conjoint[["date", "age_exact", "age_entier", "valeur_annuite", "LY_exact"]].head())
 
 #calcul des LX,LY
-LX=table_rentier[rentier[1]]
-LX1=table_rentier[rentier[1]+1]
-LXexact=round((1-rentier[2])*LX+rentier[2]*LX1,contrats["arrondi age exact"])
-LY=table_conjoint[conjoint[1]]
-LY1=table_conjoint[conjoint[1]+1]
-LYexact=round((1-conjoint[2])*LY+conjoint[2]*LY1,contrats["arrondi age exact"])
 
-# Ajout d'une colonne qui divise chaque LX_exact par la valeur de LXexact
-LXc_rentier["ratio_LX"] = LXc_rentier["LX_exact"] / LXexact
-LYc_conjoint["ratio_LY"] = LYc_conjoint["LY_exact"] / LYexact
+def calcul_LX_exact(table, personne, arrondi):
+    LX = table[personne[1]]
+    LX1 = table[personne[1] + 1]
+    return round((1 - personne[2]) * LX + personne[2] * LX1, arrondi)
 
+# Calcul des LX et LY
+LXexact = calcul_LX_exact(table_rentier, rentier, contrats["arrondi age exact"])
+LYexact = calcul_LX_exact(table_conjoint, conjoint, contrats["arrondi age exact"])
+
+# Ajout des colonnes ratio
+for df, exact, col in [(LXc_rentier, LXexact, "ratio_LX"), (LYc_conjoint, LYexact, "ratio_LY")]:
+    df[col] = df[f"{col.split('_')[1]}_exact"] / exact
 
 # Affichage des résultats
 #print(LXc_rentier[["date", "age_exact", "age_entier", "LX_exact", "ratio_LX"]].head())
 #print(LYc_conjoint[["date", "age_exact", "age_entier", "LY_exact", "ratio_LY"]].head())
 
-'''calcul ((1-px*)py)'''
-def px_py(LXc_rentier, LXexact, LYc_conjoint, LYexact):
-    return (1 - LXc_rentier / LXexact) * (LYc_conjoint/ LYexact)
 
-# Application pour le rentier
+'''calcul ((1-px*)py)'''
+def px_py(LX_exact, LX_ref, LY_exact, LY_ref):
+    return (1 - LX_exact / LX_ref) * (LY_exact / LY_ref)
+
+# Application vectorisée
 LXc_rentier["px_py"] = px_py(LXc_rentier["LX_exact"], LXexact, LYc_conjoint["LY_exact"], LYexact)
 
+# Affichage des résultats
 #print(LXc_rentier.head())
 
 '''calcul valeur actualisee'''
