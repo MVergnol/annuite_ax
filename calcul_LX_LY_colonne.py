@@ -20,12 +20,16 @@ table_conjoint = table_morta[str(conjoint[3])]
 'calcul pour la colonne flux'
 dates = generer_dates_flux(contrats['Date d effet de la rente'],contrats)
 
-'''calcul des ages par rapport a la date'''
+'''calcul des ages par rapport a la date
 ages_exacts_rentier = [age_exact(contrats['Date de naissance'], d) for d in dates]
 ages_entier_rentier = [int(a) for a in ages_exacts_rentier]
 ages_exacts_conjoint = [age_exact(contrats['Naissance conjoint'], d) for d in dates]
-ages_entier_conjoint = [int(a) for a in ages_exacts_conjoint]
+ages_entier_conjoint = [int(a) for a in ages_exacts_conjoint]'''
 
+ages_exacts_rentier = pd.Series(dates).apply(lambda d: age_exact(contrats["Date de naissance"], d))
+ages_exacts_conjoint = pd.Series(dates).apply(lambda d: age_exact(contrats["Naissance conjoint"], d))
+ages_entier_rentier = ages_exacts_rentier.astype(int)
+ages_entier_conjoint = ages_exacts_conjoint.astype(int)
 
 def calcul_colonne_LX_ou_LY(dates, ages_exacts, ages_entiers, table_mortalite, age_offset=0):
     """Génère un DataFrame des valeurs de rente en fonction des âges et d'une table de mortalité.

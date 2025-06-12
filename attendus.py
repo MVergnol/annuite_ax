@@ -5,6 +5,7 @@ with open("param.json", "r", encoding="utf-8") as f:
 
 LXc_rentier_main = get_LXc_rentier()
 
+
 '''calcul des ax'''
 def ax(LXc_rentier, terme, fractionnement):
     if terme not in ["Echu", "Avance"]:
