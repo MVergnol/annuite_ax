@@ -168,7 +168,7 @@ fractionnement = contrats['fractionnement']
 facteur_arrerage = 0 if terme == "Avance" or arrerage_deces == "Annulé" else \
     LXc_rentier["prorata"] * (1 if arrerage_deces == "Entier" else \
     0.5 * np.power(1 / (1 + taux_technique), 0.5 / fractionnement))
-
+'''
 # Calcul final
 LXc_rentier["at_ter"] = (LXc_rentier["ratio_LX"] + tx_rev * LXc_rentier["px_py"] + facteur_arrerage) \
                         * LXc_rentier["valeur_actualisee"] * LXc_rentier["coef_tempo"]
@@ -179,8 +179,9 @@ LXc_rentier.loc[LXc_rentier.index[0], "at_ter"] = 1
 # Affichage des résultats
 #print(LXc_rentier[["date", "at_ter"]].head())
 
-
+'''
 '''calcul de at_bis'''
+'''
 LXc_rentier["at_bis"] = np.where(
     (LXc_rentier.index / contrats["fractionnement"]) < (contrats["Annuite garantie"] + 1 / contrats["fractionnement"]),
     LXc_rentier["valeur_actualisee"],
@@ -193,6 +194,50 @@ LXc_rentier["at_bis"] = np.where(
 
 # Affichage des résultats
 #print(LXc_rentier[["date", "at_bis"]].head())
+'''
+
+
+
+# Extraction des paramètres pour éviter les appels répétitifs
+fractionnement = contrats["fractionnement"]
+annuite_garantie = contrats["Annuite garantie"]
+majo_apres = contrats["Majo apres"]
+majo_pourcentage = contrats["% majo"]
+majo_immediate = contrats.get("Majoration immédiate", False)  # Activation possible
+
+# 🔹 Calcul de `at_ter`
+LXc_rentier["at_ter"] = (
+    (LXc_rentier["ratio_LX"] + tx_rev * LXc_rentier["px_py"] + facteur_arrerage)
+    * LXc_rentier["valeur_actualisee"] * LXc_rentier["coef_tempo"]
+)
+
+# Correction de la première ligne
+LXc_rentier.loc[LXc_rentier.index[0], "at_ter"] = 1
+
+# Pré-calcul de l'index fractionné
+index_fractionne = LXc_rentier.index / fractionnement
+
+# 🔹 Définition des conditions pour `at_bis`
+condition_annuite_garantie = index_fractionne < (annuite_garantie + 1 / fractionnement)
+condition_majo_apres = index_fractionne < (majo_apres + 1 / fractionnement)
+
+# 🔹 Application avec gestion de la majoration immédiate
+if majo_immediate:
+    LXc_rentier["at_bis"] = np.select(
+        [condition_annuite_garantie, condition_majo_apres],
+        [LXc_rentier["valeur_actualisee"] * (1 + majo_pourcentage), LXc_rentier["at_ter"]],
+        default=LXc_rentier["at_ter"] * (1 + majo_pourcentage)
+    )
+else:
+    LXc_rentier["at_bis"] = np.select(
+        [condition_annuite_garantie, condition_majo_apres],
+        [LXc_rentier["valeur_actualisee"], LXc_rentier["at_ter"]],
+        default=LXc_rentier["at_ter"] * (1 + majo_pourcentage)
+    )
+
+# Affichage des résultats
+#print(LXc_rentier[["date", "at_ter", "at_bis"]].head())
+
 
 def get_LXc_rentier():
     return LXc_rentier
